@@ -88,38 +88,25 @@ describe('Multer S3', function () {
     })
   })
 
-  it('uploads file with AES256 server-side encryption', function (done) {
+  it('upload transformed files', function (done) {
     var s3 = mockS3()
     var form = new FormData()
-    var storage = multerS3({ s3: s3, bucket: 'test', serverSideEncryption: 'AES256' })
-    var upload = multer({ storage: storage })
-    var parser = upload.single('image')
-    var image = fs.createReadStream(path.join(__dirname, 'files', 'ffffff.png'))
-
-    form.append('name', 'Multer')
-    form.append('image', image)
-
-    submitForm(parser, form, function (err, req) {
-      assert.ifError(err)
-
-      assert.equal(req.body.name, 'Multer')
-
-      assert.equal(req.file.fieldname, 'image')
-      assert.equal(req.file.originalname, 'ffffff.png')
-      assert.equal(req.file.size, 68)
-      assert.equal(req.file.bucket, 'test')
-      assert.equal(req.file.etag, 'mock-etag')
-      assert.equal(req.file.location, 'mock-location')
-      assert.equal(req.file.serverSideEncryption, 'AES256')
-
-      done()
+    var storage = multerS3({
+      s3: s3,
+      bucket: 'test',
+      shouldTransform: true,
+      transforms: [{
+        key: 'test',
+        transform: function (req, file, cb) {
+          cb(null, new stream.PassThrough())
+        }
+      }, {
+        key: 'test2',
+        transform: function (req, file, cb) {
+          cb(null, new stream.PassThrough())
+        }
+      }]
     })
-  })
-
-  it('uploads file with AWS KMS-managed server-side encryption', function (done) {
-    var s3 = mockS3()
-    var form = new FormData()
-    var storage = multerS3({ s3: s3, bucket: 'test', serverSideEncryption: 'aws:kms' })
     var upload = multer({ storage: storage })
     var parser = upload.single('image')
     var image = fs.createReadStream(path.join(__dirname, 'files', 'ffffff.png'))
@@ -131,14 +118,14 @@ describe('Multer S3', function () {
       assert.ifError(err)
 
       assert.equal(req.body.name, 'Multer')
-
       assert.equal(req.file.fieldname, 'image')
       assert.equal(req.file.originalname, 'ffffff.png')
-      assert.equal(req.file.size, 68)
-      assert.equal(req.file.bucket, 'test')
-      assert.equal(req.file.etag, 'mock-etag')
-      assert.equal(req.file.location, 'mock-location')
-      assert.equal(req.file.serverSideEncryption, 'aws:kms')
+      assert.equal(req.file.transforms[0].size, 68)
+      assert.equal(req.file.transforms[0].bucket, 'test')
+      assert.equal(req.file.transforms[0].key, 'test')
+      assert.equal(req.file.transforms[0].etag, 'mock-etag')
+      assert.equal(req.file.transforms[0].location, 'mock-location')
+      assert.equal(req.file.transforms[1].key, 'test2')
 
       done()
     })
