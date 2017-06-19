@@ -167,10 +167,6 @@ S3Storage.prototype.directUpload = function (opts, file, cb) {
     Body: (opts.replacementStream || file.stream)
   })
 
-  upload.on('httpUploadProgress', function (ev) {
-    if (ev.total) currentSize = ev.total
-  })
-
   upload.send(function (err, result) {
     if (err) return cb(err)
 
