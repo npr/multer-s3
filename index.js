@@ -206,10 +206,6 @@ S3Storage.prototype.transformUpload = function (opts, req, file, cb) {
           Body: (opts.replacementStream || file.stream).pipe(piper)
         })
 
-        upload.on('httpUploadProgress', function (ev) {
-          if (ev.total) currentSize = ev.total
-        })
-
         upload.send(function (err, result) {
           if (err) return cb(err)
 
